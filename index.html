@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一个小站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {}
+        }
+      }
+    </script>
+    <style>
+      /* 确保基础元素可见 */
+      body {
+        background-color: #f8f9fa;
+        color: #333;
+        font-family: sans-serif;
+      }
+      #app {
+        min-height: 100vh;
+        display: block;
+      }
+      /* 调试样式 */
+      .debug-outline {
+        outline: 2px solid red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // 简单的调试脚本
+      window.addEventListener('load', () => {
+        console.log('页面已加载');
+        const appEl = document.getElementById('app');
+        console.log('App元素:', appEl);
+        console.log('App元素内容:', appEl.innerHTML);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1423 @@
+<template>
+  <div class="chat-window bg-white dark:bg-gray-800 relative flex flex-col h-full w-full">
+    <!-- 应用菜单 -->
+    <div class="app-menu flex justify-center border-b border-gray-200 dark:border-gray-700 py-2 px-4">
+      <div class="max-w-3xl flex space-x-4">
+        <button 
+          @click="activeView = 'chat'" 
+          class="px-4 py-2 rounded-md font-medium transition-colors"
+          :class="activeView === 'chat' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          对话
+        </button>
+        <button 
+          @click="activeView = 'analysis'" 
+          class="px-4 py-2 rounded-md font-medium transition-colors"
+          :class="activeView === 'analysis' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          常规分析
+        </button>
+        <button 
+          @click="activeView = 'settings'" 
+          class="px-4 py-2 rounded-md font-medium transition-colors"
+          :class="activeView === 'settings' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+        >
+          设置
+        </button>
+      </div>
+    </div>
+
+    <!-- 聊天界面 -->
+    <div v-if="activeView === 'chat'" class="flex flex-col flex-grow overflow-hidden">
+    <!-- 聊天头部 -->
+      <div class="chat-header flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-2 px-4">
+      <div class="flex items-center">
+          <h2 class="text-lg font-medium text-gray-700 dark:text-gray-200">
+            {{ activeModel?.name || '聊天' }}
+        </h2>
+      </div>
+        
+        <div class="flex space-x-2">
+          <button 
+            @click="createNewChat"
+            class="flex items-center px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+            新对话
+        </button>
+        
+          <button 
+            @click="exportChat"
+            class="flex items-center px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+          </svg>
+            导出
+        </button>
+        
+          <button 
+            @click="clearChat"
+            class="flex items-center px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+            清空
+        </button>
+      </div>
+    </div>
+    
+      <!-- 消息区域 -->
+      <div class="chat-messages flex-grow h-3/4 overflow-y-auto p-4" ref="chatMessagesRef">
+        <!-- 消息列表 -->
+        <div class="space-y-4 max-w-3xl mx-auto">
+          <!-- 空状态 -->
+          <div v-if="messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 py-10">
+            <svg class="w-16 h-16 mb-6 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+        </svg>
+            <h2 class="text-xl font-medium mb-2 text-gray-700 dark:text-gray-300">开始与{{ activeModel?.name || 'AI助手' }}对话</h2>
+            <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-md text-center">您可以询问任何问题，助手将为您提供帮助。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">
+              <div @click="addSampleMessage('介绍一下你自己')" class="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">介绍一下你自己</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">了解AI助手的能力和限制</div>
+              </div>
+              <div @click="addSampleMessage('如何提高编程效率？')" class="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">如何提高编程效率？</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">获取提升开发效率的建议</div>
+              </div>
+              <div @click="addSampleMessage('帮我优化一段代码')" class="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">帮我优化一段代码</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">AI可以帮助改进你的代码</div>
+              </div>
+              <div @click="addSampleMessage('解释一下什么是React Hooks')" class="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">解释一下什么是React Hooks</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">获取技术概念的解释</div>
+              </div>
+        </div>
+      </div>
+      
+          <template v-if="messages.length > 0" v-for="(message, index) in messages" :key="message.id">
+          <!-- 用户消息 -->
+            <div v-if="message.role === 'user'" class="message-container user-message">
+              <div class="flex justify-end mb-4">
+            <div class="bg-blue-500 text-white p-3 rounded-lg max-w-md">
+              {{ message.content }}
+                </div>
+              </div>
+              
+              <!-- 消息状态指示器 -->
+              <div
+                v-if="messageStatuses[message.id]"
+                class="message-status"
+                :class="messageStatuses[message.id].status"
+              >
+                <span class="status-icon">
+                  <i v-if="messageStatuses[message.id].status === 'sending'" class="fas fa-spinner fa-spin"></i>
+                  <i v-else-if="messageStatuses[message.id].status === 'sent'" class="fas fa-check"></i>
+                  <i v-else-if="messageStatuses[message.id].status === 'error'" class="fas fa-exclamation-circle"></i>
+                  <i v-else-if="messageStatuses[message.id].status === 'retrying'" class="fas fa-redo fa-spin"></i>
+                </span>
+                <span class="status-text">
+                  {{ 
+                    messageStatuses[message.id].status === 'sending' ? '发送中...' :
+                    messageStatuses[message.id].status === 'sent' ? '已发送' :
+                    messageStatuses[message.id].status === 'error' ? '发送失败' :
+                    '重试中...'
+                  }}
+                </span>
+                <button
+                  v-if="messageStatuses[message.id].status === 'error'"
+                  class="retry-button"
+                  @click="retryMessage(message.id)"
+                >
+                  重试
+                </button>
+            </div>
+          </div>
+          
+          <!-- AI思考过程 -->
+            <div v-else-if="message.role === 'assistant' && message.isThinking" class="message-container ai-thinking">
+              <div class="mb-4">
+            <div class="flex items-center mb-2">
+              <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+                  <span class="text-sm font-medium text-purple-500">思考过程</span>
+              <button @click="toggleThinking(index)" class="ml-2 text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path v-if="expandedThinking === index || expandedThinking === true" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                  <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
+                <div v-if="expandedThinking === index || expandedThinking === true" class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap w-full max-w-3xl">
+                  {{ message.content }}
+                </div>
+            </div>
+          </div>
+          
+            <!-- AI回复消息 -->
+            <div v-else-if="message.role === 'assistant' && !message.isThinking" class="message-container ai-message">
+              <div class="flex mb-4 relative group">
+                <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg w-full max-w-3xl text-gray-800 dark:text-gray-200 markdown-content">
+                  <div v-html="renderMarkdown(message.content)"></div>
+            </div>
+                <button 
+                  @click="copyMessage(message.content)" 
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                  title="复制原文"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                  </svg>
+                </button>
+          </div>
+        </div>
+          </template>
+        
+        <!-- 正在输入指示器 -->
+        <div v-if="isTyping" class="flex mb-4">
+          <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 输入区域 -->
+    <div class="p-4 border-t dark:border-gray-700">
+      <div class="flex">
+        <textarea
+          v-model="userInput"
+            @keydown.enter="handleEnterKey"
+            ref="inputArea"
+            class="flex-grow p-3 border dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700 resize-y min-h-[60px] max-h-[300px] bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+          placeholder="输入您的问题..."
+          rows="2"
+          :disabled="isTyping"
+        ></textarea>
+        <button
+          @click="sendMessage"
+          class="px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-r-lg transition-colors"
+          :disabled="isTyping || !userInput.trim()"
+        >
+          发送
+        </button>
+      </div>
+      <div class="mt-2 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
+          <span>按 Shift + Enter 发送</span>
+          <span>Enter 换行</span>
+      </div>
+      </div>
+    </div>
+
+    <!-- 常规分析页面 -->
+    <div v-else-if="activeView === 'analysis'" class="flex flex-col flex-grow overflow-hidden p-6">
+      <div class="max-w-3xl mx-auto w-full">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">常规分析</h2>
+        
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+          <h3 class="text-lg font-medium mb-4 text-gray-700 dark:text-gray-300">数据统计</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div class="text-sm text-gray-500 dark:text-gray-400">对话总数</div>
+              <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ store.conversations.length }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div class="text-sm text-gray-500 dark:text-gray-400">消息总数</div>
+              <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                {{ store.conversations.reduce((sum, conv) => sum + conv.messages.length, 0) }}
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div class="text-sm text-gray-500 dark:text-gray-400">使用最多的模型</div>
+              <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                {{ getMostUsedModel() }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6">
+          <h3 class="text-lg font-medium mb-4 text-gray-700 dark:text-gray-300">最近对话</h3>
+          <div class="space-y-3">
+            <div 
+              v-for="conv in recentConversations" 
+              :key="conv.id" 
+              @click="openConversation(conv.id)"
+              class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <div>
+                <div class="font-medium text-gray-800 dark:text-gray-200">{{ conv.title }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ new Date(conv.updatedAt).toLocaleString() }} · {{ getModelNameById(conv.modelId) }}
+                </div>
+              </div>
+              <div class="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">
+                {{ conv.messages.length }}条消息
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置页面 -->
+    <div v-else-if="activeView === 'settings'" class="flex flex-col flex-grow overflow-hidden p-6">
+      <div class="max-w-3xl mx-auto w-full">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">设置</h2>
+        
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+          <h3 class="text-lg font-medium mb-4 text-gray-700 dark:text-gray-300">模型设置</h3>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">默认模型</label>
+            <select 
+              v-model="defaultModelId" 
+              class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option v-for="model in store.models" :key="model.id" :value="model.id">
+                {{ model.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">温度</label>
+            <div class="flex items-center">
+              <input 
+                type="range" 
+                v-model="temperature" 
+                min="0" 
+                max="1" 
+                step="0.1" 
+                class="w-full"
+              />
+              <span class="ml-2 text-gray-700 dark:text-gray-300 w-10">{{ temperature }}</span>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">最大令牌数</label>
+            <input 
+              type="number" 
+              v-model="maxTokens" 
+              min="10" 
+              max="4000" 
+              class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+          <h3 class="text-lg font-medium mb-4 text-gray-700 dark:text-gray-300">界面设置</h3>
+          
+          <div class="flex items-center justify-between py-2">
+            <span class="text-gray-700 dark:text-gray-300">深色模式</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" v-model="isDarkMode" class="sr-only peer" @change="toggleDarkMode">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          
+          <div class="flex items-center justify-between py-2">
+            <span class="text-gray-700 dark:text-gray-300">始终显示思考过程</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" v-model="alwaysShowThinking" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex justify-end">
+          <button 
+            @click="saveSettings" 
+            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            保存设置
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 复制成功提示 -->
+    <div v-if="copySuccess" class="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300" :class="{ 'opacity-100': copySuccess, 'opacity-0': !copySuccess }">
+      复制成功
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, nextTick, computed } from 'vue'
+import { useModelStore } from '../../stores/model'
+import { createChatCompletion } from '../../services/api'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+// 定义组件事件
+const emit = defineEmits(['loading-state-change'])
+
+// 新增顶部菜单活跃状态
+const activeView = ref('chat');
+const isDarkMode = ref(document.documentElement.classList.contains('dark'));
+
+// 使用界面相关数据
+const userInput = ref('');
+const messages = ref<Message[]>([]);
+const isThinkingVisible = ref(true);
+const isStreaming = ref(false);
+const thinking = ref('');
+const currentStreamingContent = ref('');
+const currentStreamingType = ref<'thinking' | 'content'>('thinking');
+
+// 消息状态接口定义
+interface MessageStatusObj {
+  id: string;
+  status: MessageStatus;
+  error?: string;
+}
+
+const messageStatuses = ref<Record<string, MessageStatusObj>>({});
+const temporaryMessage = ref<Message | null>(null);
+const currentlySending = ref(false);
+const requestInProgress = ref(false);
+const requestCancelController = ref<AbortController | null>(null);
+const copySuccess = ref(false); // 复制成功状态
+
+// 模型设置
+const temperature = ref(0.7);
+const maxTokens = ref(1000);
+
+// 聊天容器引用
+const chatMessagesRef = ref<HTMLElement | null>(null);
+
+// 消息类型定义
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  isThinking?: boolean;
+  status?: MessageStatus;
+}
+
+// 消息状态类型
+type MessageStatus = 'sending' | 'sent' | 'error' | 'received' | 'retrying';
+
+const store = useModelStore();
+const expandedThinking = ref<boolean | number | null>(true);
+const inputArea = ref<HTMLTextAreaElement | null>(null);
+const typingSpeed = ref(30);
+const currentTypingIndex = ref(0);
+const currentTypingContent = ref('');
+const tempThinkingMessage = ref<Message | null>(null);
+
+// 是否显示思考过程
+const showThinking = ref(true);
+// 是否正在打字显示效果
+const isTyping = ref(false);
+
+// 设置页面状态
+const defaultModelId = ref(store.activeModelId);
+const alwaysShowThinking = ref(showThinking.value);
+
+// 获取最近对话
+const recentConversations = computed(() => {
+  return [...store.conversations]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 5);
+});
+
+// 获取当前激活的模型
+const activeModel = computed(() => {
+  return store.activeModel;
+});
+
+// 获取最常使用的模型
+function getMostUsedModel() {
+  const modelUsage: Record<string, number> = {};
+  
+  store.conversations.forEach(conv => {
+    if (!modelUsage[conv.modelId]) {
+      modelUsage[conv.modelId] = 0;
+    }
+    modelUsage[conv.modelId]++;
+  });
+  
+  let mostUsedId = '';
+  let maxCount = 0;
+  
+  Object.entries(modelUsage).forEach(([id, count]) => {
+    if (count > maxCount) {
+      mostUsedId = id;
+      maxCount = count;
+    }
+  });
+  
+  const model = store.models.find(m => m.id === mostUsedId);
+  return model ? model.name : '无数据';
+}
+
+// 通过ID获取模型名称
+function getModelNameById(id: string) {
+  const model = store.models.find(m => m.id === id);
+  return model ? model.name : '未知模型';
+}
+
+// 打开会话
+function openConversation(id: string) {
+  store.setActiveConversation(id);
+  activeView.value = 'chat';
+}
+
+// 切换暗黑模式
+function toggleDarkMode() {
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
+// 保存设置
+function saveSettings() {
+  store.setActiveModel(defaultModelId.value);
+  showThinking.value = alwaysShowThinking.value;
+  
+  console.log('设置已保存:', {
+    defaultModelId: defaultModelId.value,
+    temperature: temperature.value,
+    maxTokens: maxTokens.value,
+    darkMode: isDarkMode.value,
+    showThinking: showThinking.value
+  });
+  
+  // 通知用户设置已保存
+  const notification = document.createElement('div');
+  notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg';
+  notification.textContent = '设置已保存';
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 2000);
+}
+
+// 确保createNewChat完全清空所有消息
+function createNewChat() {
+  // 清空消息列表
+  messages.value = [];
+  temporaryMessage.value = null;
+  
+  // 重置消息状态
+  messageStatuses.value = {};
+  
+  // 重置所有状态
+  currentStreamingContent.value = '';
+  currentStreamingType.value = 'content';
+  isStreaming.value = false;
+  currentlySending.value = false;
+  requestInProgress.value = false;
+  
+  // 中止任何正在进行的请求
+  if (requestCancelController.value) {
+    requestCancelController.value.abort();
+    requestCancelController.value = null;
+  }
+  
+  // 重置思考状态
+  expandedThinking.value = null;
+  
+  // 创建新会话
+  const newId = store.createConversation(store.activeModelId);
+  store.setActiveConversation(newId);
+  
+  console.log('已创建新的聊天会话:', newId, '所有状态已重置');
+}
+
+// 切换思考过程的展开/折叠状态
+function toggleThinking(index: number) {
+  if (expandedThinking.value === index) {
+    expandedThinking.value = null;
+  } else {
+    expandedThinking.value = index;
+  }
+}
+
+// 处理Enter键按下事件
+function handleEnterKey(event: KeyboardEvent) {
+  // 如果按住Shift键，则发送消息
+  if (event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+  // 否则允许Enter键进行换行，这是textarea的默认行为，所以不需要特殊处理
+}
+
+// 打字机效果
+const typeWriter = async (content: string) => {
+  isTyping.value = true;
+  currentTypingIndex.value = 0;
+  currentTypingContent.value = '';
+  
+  while (currentTypingIndex.value < content.length) {
+    currentTypingContent.value += content[currentTypingIndex.value];
+    currentTypingIndex.value++;
+    
+    // 更新临时消息
+    if (currentStreamingType.value === 'thinking') {
+      tempThinkingMessage.value = {
+        id: generateId(),
+        role: 'assistant',
+        content: currentTypingContent.value,
+        isThinking: true
+      };
+    } else {
+      tempThinkingMessage.value = {
+        id: generateId(),
+        role: 'assistant',
+        content: currentTypingContent.value,
+        isThinking: false
+      };
+    }
+    
+    // 滚动到底部
+    nextTick(() => {
+      scrollToBottom();
+    });
+    
+    // 等待打字速度
+    await new Promise(resolve => setTimeout(resolve, typingSpeed.value));
+  }
+  
+  isTyping.value = false;
+};
+
+// 检查收到的内容是否包含思考过程标签
+function extractThinking(content: string): string {
+  const regex = /<思考过程>([\s\S]*?)<\/思考过程>/;
+  const match = content.match(regex);
+  if (match && match[1]) {
+    console.log('[DEBUG] 提取到思考过程:', match[1].substring(0, 50) + (match[1].length > 50 ? '...' : ''));
+    return match[1].trim();
+  }
+  return content;
+}
+
+// 处理Stream响应
+const handleStream = async (chunk: string) => {
+  // 记录收到的流数据
+  console.log(`[处理流] 收到${currentStreamingType.value}数据:`, 
+    chunk.substring(0, 20) + (chunk.length > 20 ? '...' : ''),
+    `长度: ${chunk.length}`);
+  
+  // 将接收到的块追加到当前流内容
+  currentStreamingContent.value += chunk;
+  
+  // 检查是否包含思考过程标签
+  const fullContent = currentStreamingContent.value;
+  const thinkingRegex = /<思考过程>([\s\S]*?)(?:<\/思考过程>|$)/;
+  const thinkingMatch = fullContent.match(thinkingRegex);
+  
+  // 标记是否有完整的思考过程（开始和结束标签）
+  const hasOpeningThinkingTag = fullContent.includes('<思考过程>');
+  const hasClosingThinkingTag = fullContent.includes('</思考过程>');
+  const hasCompletedThinking = hasOpeningThinkingTag && hasClosingThinkingTag;
+  
+  // 获取思考过程之后的内容
+  let contentAfterThinking = '';
+  if (hasCompletedThinking) {
+    contentAfterThinking = fullContent.replace(/<思考过程>[\s\S]*?<\/思考过程>/, '').trim();
+  }
+  
+  if (thinkingMatch && thinkingMatch[1]) {
+    // 提取思考过程内容
+    const thinkingContent = thinkingMatch[1].trim();
+    
+    // 1. 管理思考消息 - 始终排在顶部
+    let thinkingMessage = messages.value.find(m => m.isThinking && m.role === 'assistant');
+    
+    if (!thinkingMessage) {
+      // 创建新的思考消息
+      thinkingMessage = {
+        id: 'thinking-' + Date.now(),
+        role: 'assistant',
+        content: thinkingContent,
+        isThinking: true
+      };
+      
+      // 移除可能存在的临时思考消息
+      messages.value = messages.value.filter(msg => 
+        !(msg.role === 'assistant' && msg.id.startsWith('temp-') && msg.isThinking)
+      );
+      
+      // 将思考消息插入到最后一条用户消息后面
+      const lastUserMessageIndex = [...messages.value].reverse().findIndex(msg => msg.role === 'user');
+      if (lastUserMessageIndex >= 0) {
+        const actualIndex = messages.value.length - 1 - lastUserMessageIndex;
+        messages.value.splice(actualIndex + 1, 0, thinkingMessage);
+  } else {
+        messages.value.push(thinkingMessage);
+      }
+    } else {
+      // 更新现有思考消息内容
+      thinkingMessage.content = thinkingContent;
+    }
+    
+    // 删除任何现有的非思考消息（如果思考过程尚未完成）
+    if (!hasCompletedThinking) {
+      // 如果思考过程还没有完成，删除所有内容消息
+      messages.value = messages.value.filter(msg => 
+        msg.role !== 'assistant' || msg.isThinking
+      );
+      return; // 直接返回，不创建内容消息
+    }
+    
+    // 2. 只有当思考过程已完成且有实际内容时才管理内容消息
+    if (hasCompletedThinking && contentAfterThinking) {
+      let contentMessage = messages.value.find(m => 
+        !m.isThinking && 
+        m.role === 'assistant' && 
+        m.id.includes('content-')
+      );
+      
+      if (!contentMessage) {
+        // 创建新的内容消息
+        contentMessage = {
+          id: 'content-' + Date.now(),
+          role: 'assistant',
+          content: contentAfterThinking,
+          isThinking: false
+        };
+        
+        // 移除可能存在的临时内容消息
+        messages.value = messages.value.filter(msg => 
+          !(msg.role === 'assistant' && !msg.isThinking) || msg.id === thinkingMessage.id
+        );
+        
+        // 将内容消息插入到思考消息后面
+        const thinkingMessageIndex = messages.value.findIndex(m => m.id === thinkingMessage.id);
+        if (thinkingMessageIndex >= 0) {
+          messages.value.splice(thinkingMessageIndex + 1, 0, contentMessage);
+        } else {
+          messages.value.push(contentMessage);
+        }
+      } else {
+        // 更新现有内容消息
+        contentMessage.content = contentAfterThinking;
+      }
+      
+      // 更新临时消息引用
+      temporaryMessage.value = contentMessage;
+    }
+  } else if (!hasOpeningThinkingTag) {
+    // 没有思考过程标签，处理普通消息
+    // 确保有一个临时消息用于显示
+    if (!temporaryMessage.value) {
+      temporaryMessage.value = {
+        id: 'temp-' + Date.now(),
+        role: 'assistant',
+    content: '',
+        isThinking: false
+      };
+      
+      // 将临时消息添加到消息列表以便实时显示
+      messages.value.push(temporaryMessage.value);
+    }
+    
+    // 更新临时消息内容（清除可能的标签）
+    temporaryMessage.value.content = currentStreamingContent.value
+      .replace(/<思考过程>[\s\S]*?<\/思考过程>/, '')
+      .replace(/<思考过程>[\s\S]*/, '')
+      .replace(/<\/思考过程>[\s\S]*/, '')
+      .trim();
+  }
+  
+  // 滚动到底部
+  scrollToBottom();
+};
+
+// 生成唯一ID
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
+
+// 更新消息状态
+function updateMessageStatus(id: string, status: MessageStatus, error?: string) {
+  messageStatuses.value[id] = {
+    id,
+    status,
+    error
+  };
+  console.log(`Message ${id} status updated to ${status}`, messageStatuses.value[id]);
+}
+
+// 修改发送消息函数
+const sendMessage = async () => {
+  // 如果当前正在处理消息或没有模型，则不发送
+  if (currentlySending.value || !userInput.value.trim() || !store.activeModel) {
+    return;
+  }
+  currentlySending.value = true;
+  // 通知父组件加载状态变化
+  emit('loading-state-change', true);
+  
+  console.log('[发送消息] 开始发送:', userInput.value);
+  
+  // 重置临时消息和流内容
+  temporaryMessage.value = null;
+  currentStreamingContent.value = '';
+  
+  // 清除之前的助手消息
+  const userMessages = messages.value.filter(msg => msg.role === 'user');
+  // 只保留用户消息，删除所有助手消息
+  messages.value = userMessages;
+  
+  try {
+    // 创建一个新消息
+    const newMessage: Message = {
+      id: generateId(),
+      role: 'user',
+      content: userInput.value,
+      status: 'sending',
+    };
+    
+    // 添加到消息列表
+    messages.value.push(newMessage);
+    
+    // 清空输入框并滚动到底部
+    userInput.value = '';
+        scrollToBottom();
+    
+    // 确保有一个激活的模型
+    if (!store.activeModel) {
+      console.error('[发送消息] 错误: 没有选择模型');
+      newMessage.status = 'error';
+      currentlySending.value = false;
+      return;
+    }
+    
+    const modelId = store.activeModel.apiId;
+    console.log('[发送消息] 当前模型:', modelId);
+    
+    // 设置初始流类型 - 如果是deepseek或deepclaude模型，默认先显示思考过程
+    if (modelId.includes('deepseek') || modelId.includes('deepclaude')) {
+      currentStreamingType.value = 'thinking';
+    } else {
+      currentStreamingType.value = 'content';
+    }
+    
+    // 创建发送给API的消息数组 - 只包含用户消息
+    const messageHistory = userMessages
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    
+    // 添加用户的新消息
+    messageHistory.push({
+      role: 'user',
+      content: newMessage.content
+    });
+    
+    // 记录请求参数
+    console.log('[发送消息] API请求参数:', {
+      modelId,
+      messageCount: messageHistory.length,
+      temperature: 0.7,
+      maxTokens: 1000,
+      thinking: currentStreamingType.value === 'thinking'
+    });
+    
+    // 设置请求正在进行中
+    requestInProgress.value = true;
+    requestCancelController.value = new AbortController();
+    
+    // 发送请求
+    const response = await createChatCompletion({
+      model: modelId,
+      messages: messageHistory,
+      temperature: 0.7,
+      max_tokens: 1000,
+      stream: true,
+      thinking: currentStreamingType.value === 'thinking'
+    }, handleStream);
+    
+    console.log('[发送消息] API响应已完成:', response);
+    
+    // 更新消息状态
+    newMessage.status = 'sent';
+    
+    // 保存会话到存储
+    store.saveConversation(messages.value.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      thinking: msg.isThinking ? msg.content : undefined
+    })));
+    
+  } catch (error) {
+    console.error('[发送消息] 错误:', error);
+    
+    // 找到最后一条用户消息并标记为错误
+    const lastUserMessage = [...messages.value].reverse().find(msg => msg.role === 'user');
+    if (lastUserMessage) {
+      lastUserMessage.status = 'error';
+    }
+    
+    // 显示错误提示
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : '发送消息时发生未知错误';
+    alert(`抱歉，处理您的消息时出现错误：${errorMessage}`);
+    
+  } finally {
+    currentlySending.value = false;
+    requestInProgress.value = false;
+    requestCancelController.value = null;
+    // 通知父组件加载状态变化
+    emit('loading-state-change', false);
+  }
+};
+
+// 重试发送消息
+const retryMessage = async (messageId: string) => {
+  const message = messages.value.find(m => m.id === messageId);
+  if (!message) return;
+  
+  updateMessageStatus(messageId, 'retrying');
+  
+  try {
+    // 重新发送消息
+    await sendMessage();
+  } catch (error) {
+    updateMessageStatus(messageId, 'error', error instanceof Error ? error.message : '未知错误');
+  }
+};
+
+// 添加示例消息
+function addSampleMessage(content: string) {
+  userInput.value = content;
+  sendMessage();
+}
+
+// 滚动到底部
+function scrollToBottom() {
+  nextTick(() => {
+    if (chatMessagesRef.value) {
+      chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight;
+    }
+  });
+}
+
+// 清空聊天
+function clearChat() {
+  messages.value = [];
+}
+
+// 导出聊天
+function exportChat() {
+  if (messages.value.length === 0) return;
+  
+  const chatContent = messages.value.map(msg => {
+    return `${msg.role === 'user' ? '用户' : 'AI'}: ${msg.content}`;
+  }).join('\n\n');
+  
+  const blob = new Blob([chatContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `聊天记录_${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Markdown渲染函数
+function renderMarkdown(content: string): string {
+  try {
+    // 使用marked解析Markdown
+    const html = marked.parse(content, { breaks: true });
+    // 使用DOMPurify净化HTML，防止XSS攻击
+    return DOMPurify.sanitize(html);
+  } catch (error) {
+    console.error('Markdown渲染错误:', error);
+    return content;
+  }
+}
+
+// 复制消息内容
+function copyMessage(content: string) {
+  try {
+    navigator.clipboard.writeText(content).then(() => {
+      // 显示复制成功提示
+      copySuccess.value = true;
+      setTimeout(() => {
+        copySuccess.value = false;
+      }, 2000);
+    });
+  } catch (error) {
+    console.error('复制失败:', error);
+    // 使用备用方法
+    const textarea = document.createElement('textarea');
+    textarea.value = content;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    
+    // 显示复制成功提示
+    copySuccess.value = true;
+    setTimeout(() => {
+      copySuccess.value = false;
+    }, 2000);
+  }
+}
+
+onMounted(() => {
+  // 初始化聊天容器引用
+  scrollToBottom();
+  
+  // 如果有活跃会话，加载会话消息
+  if (store.activeConversation) {
+    messages.value = store.activeConversation.messages.map(msg => ({
+      id: generateId(),
+      role: msg.role,
+      content: msg.content,
+      isThinking: msg.thinking
+    }));
+  }
+  
+  // 添加诊断消息
+  setTimeout(() => {
+    try {
+      // 获取日志数量，验证日志服务是否正常工作
+      const { getLogsCount } = require('../../utils/logger');
+      const logsCount = getLogsCount();
+      console.log('[INFO] 日志系统状态:', { 
+        logsCount, 
+        activeModel: store.activeModel?.apiId,
+        validModels: ['deepseek-r1', 'claude', 'deepclaude'].includes(store.activeModel?.apiId || '')
+      });
+    } catch (error) {
+      console.error('[ERROR] 无法访问日志系统:', error);
+    }
+  }, 1000);
+});
+</script>
+
+<style scoped>
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 当activeView为chat时，聊天区域占75%高度 */
+.chat-window[activeView="chat"] .chat-messages {
+  height: 75%;
+}
+
+/* 应用菜单样式 */
+.app-menu {
+  background-color: var(--bg-color, white);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+/* Markdown内容样式 */
+.markdown-content h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+.markdown-content h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.75rem 0;
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-content ul {
+  list-style: disc;
+}
+
+.markdown-content ol {
+  list-style: decimal;
+}
+
+.markdown-content p {
+  margin: 0.5rem 0;
+}
+
+.markdown-content pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.dark .markdown-content pre {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content code {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .markdown-content code {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.markdown-content table {
+  width: 100%;
+  margin: 0.75rem 0;
+  border-collapse: collapse;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--border-color, #e5e7eb);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .markdown-content th {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 打字指示器动画 */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  background: #606060;
+  border-radius: 50%;
+  display: block;
+  margin: 0 2px;
+  opacity: 0.4;
+  animation: typing 1s infinite ease-in-out;
+}
+
+.dark .typing-indicator span {
+  background: #a0a0a0;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0% {
+    transform: translateY(0px);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-5px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(0px);
+    opacity: 0.4;
+  }
+}
+
+.chat-input-area {
+  position: relative;
+  padding: 1rem;
+  background: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.chat-input-area textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 200px;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.chat-input-area textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-alpha);
+}
+
+.chat-input-area textarea:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.chat-input-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.send-button,
+.cancel-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.send-button {
+  background: var(--primary-color);
+  color: white;
+}
+
+.send-button:hover:not(:disabled) {
+  background: var(--primary-color-dark);
+}
+
+.send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background: var(--danger-color);
+  color: white;
+}
+
+.cancel-button:hover {
+  background: var(--danger-color-dark);
+}
+
+.message {
+  margin: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.message.user {
+  margin-left: auto;
+  background: var(--primary-color);
+  color: white;
+}
+
+.message.assistant {
+  margin-right: auto;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+}
+
+.message-content {
+  position: relative;
+}
+
+.thinking-content {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.thinking-content.expanded {
+  max-height: none;
+}
+
+.thinking-header {
+  padding: 0.5rem;
+  background: var(--bg-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.thinking-header:hover {
+  background: var(--hover-color);
+}
+
+.thinking-icon {
+  font-size: 1.2rem;
+}
+
+.thinking-title {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.thinking-toggle {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+.thinking-body {
+  padding: 0.5rem;
+  background: var(--bg-color-secondary);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.thinking-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-color);
+}
+
+.message-text {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.message-text.typing::after {
+  content: '▋';
+  display: inline-block;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.message-status {
+  position: absolute;
+  bottom: -1.5rem;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  transition: all 0.3s ease;
+}
+
+.message-status.sending {
+  color: var(--primary-color);
+}
+
+.message-status.sent {
+  color: var(--success-color);
+}
+
+.message-status.error {
+  color: var(--danger-color);
+}
+
+.message-status.retrying {
+  color: var(--warning-color);
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+}
+
+.status-text {
+  white-space: nowrap;
+}
+
+.retry-button {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--danger-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--danger-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+  background: var(--danger-color);
+  color: white;
+}
+
+/* 添加消息动画 */
+.message {
+  animation: messageAppear 0.3s ease;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 优化思考过程动画 */
+.thinking-content {
+  animation: thinkingAppear 0.3s ease;
+}
+
+@keyframes thinkingAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
