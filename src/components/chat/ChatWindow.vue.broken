@@ -102,98 +102,98 @@
         </div>
       </div>
       
-          <template v-if="messages.length > 0" v-for="(message, index) in messages" :key="message.id">
-          <!-- 用户消息 -->
-            <div v-if="message.role === 'user'" class="message-container user-message">
-              <div class="flex justify-end mb-4">
+      <template v-else v-for="(message, index) in messages" :key="message.id">
+      <!-- 用户消息 -->
+        <div v-if="message.role === 'user'" class="message-container user-message">
+          <div class="flex justify-end mb-4">
             <div class="bg-blue-500 text-white p-3 rounded-lg max-w-md">
               {{ message.content }}
-                </div>
-              </div>
-              
-              <!-- 消息状态指示器 -->
-              <div
-                v-if="messageStatuses[message.id]"
-                class="message-status"
-                :class="messageStatuses[message.id].status"
-              >
-                <span class="status-icon">
-                  <i v-if="messageStatuses[message.id].status === 'sending'" class="fas fa-spinner fa-spin"></i>
-                  <i v-else-if="messageStatuses[message.id].status === 'sent'" class="fas fa-check"></i>
-                  <i v-else-if="messageStatuses[message.id].status === 'error'" class="fas fa-exclamation-circle"></i>
-                  <i v-else-if="messageStatuses[message.id].status === 'retrying'" class="fas fa-redo fa-spin"></i>
-                </span>
-                <span class="status-text">
-                  {{ 
-                    messageStatuses[message.id].status === 'sending' ? '发送中...' :
-                    messageStatuses[message.id].status === 'sent' ? '已发送' :
-                    messageStatuses[message.id].status === 'error' ? '发送失败' :
-                    '重试中...'
-                  }}
-                </span>
-                <button
-                  v-if="messageStatuses[message.id].status === 'error'"
-                  class="retry-button"
-                  @click="retryMessage(message.id)"
-                >
-                  重试
-                </button>
             </div>
           </div>
           
-          <!-- AI思考过程 -->
-            <div v-else-if="message.role === 'assistant' && message.isThinking" class="message-container ai-thinking">
-              <div class="mb-4">
+          <!-- 消息状态指示器 -->
+          <div
+            v-if="messageStatuses[message.id]"
+            class="message-status"
+            :class="messageStatuses[message.id].status"
+          >
+            <span class="status-icon">
+              <i v-if="messageStatuses[message.id].status === 'sending'" class="fas fa-spinner fa-spin"></i>
+              <i v-else-if="messageStatuses[message.id].status === 'sent'" class="fas fa-check"></i>
+              <i v-else-if="messageStatuses[message.id].status === 'error'" class="fas fa-exclamation-circle"></i>
+              <i v-else-if="messageStatuses[message.id].status === 'retrying'" class="fas fa-redo fa-spin"></i>
+            </span>
+            <span class="status-text">
+              {{ 
+                messageStatuses[message.id].status === 'sending' ? '发送中...' :
+                messageStatuses[message.id].status === 'sent' ? '已发送' :
+                messageStatuses[message.id].status === 'error' ? '发送失败' :
+                '重试中...'
+              }}
+            </span>
+            <button
+              v-if="messageStatuses[message.id].status === 'error'"
+              class="retry-button"
+              @click="retryMessage(message.id)"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      
+      <!-- AI思考过程 -->
+        <div v-else-if="message.role === 'assistant' && message.isThinking" class="message-container ai-thinking">
+          <div class="mb-4">
             <div class="flex items-center mb-2">
               <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
               </svg>
-                  <span class="text-sm font-medium text-purple-500">思考过程</span>
+              <span class="text-sm font-medium text-purple-500">思考过程</span>
               <button @click="toggleThinking(index)" class="ml-2 text-gray-400 hover:text-gray-600">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path v-if="expandedThinking === index || expandedThinking === true" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                  <path v-if="expandedThinking === index || expandedThinking === true" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
                   <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
             </div>
-                <div v-if="expandedThinking === index || expandedThinking === true" class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap w-full max-w-3xl">
-                  {{ message.content }}
-                </div>
+            <div v-if="expandedThinking === index || expandedThinking === true" class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap w-full max-w-3xl">
+              {{ message.content }}
             </div>
-          </div>
-          
-            <!-- AI回复消息 -->
-            <div v-else-if="message.role === 'assistant' && !message.isThinking" class="message-container ai-message">
-              <div class="flex mb-4 relative group">
-                <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg w-full max-w-3xl text-gray-800 dark:text-gray-200 markdown-content">
-                  <div v-html="renderMarkdown(message.content)"></div>
-            </div>
-                <button 
-                  @click="copyMessage(message.content)" 
-                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
-                  title="复制原文"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                  </svg>
-                </button>
           </div>
         </div>
-          </template>
         
-        <!-- 正在输入指示器 -->
-        <div v-if="isTyping" class="flex mb-4">
-          <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
-            <div class="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
+        <!-- AI回复消息 -->
+        <div v-else-if="message.role === 'assistant' && !message.isThinking" class="message-container ai-message">
+          <div class="flex mb-4 relative group">
+            <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg w-full max-w-3xl text-gray-800 dark:text-gray-200 markdown-content">
+              <div v-html="renderMarkdown(message.content)"></div>
             </div>
+            <button 
+              @click="copyMessage(message.content)" 
+              class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+              title="复制原文"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </template>
+      
+      <!-- 正在输入指示器 -->
+      <div v-if="isTyping" class="flex mb-4">
+        <div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
         </div>
       </div>
     </div>
-    
+  </div>
+
     <!-- 输入区域 -->
     <div class="border-t dark:border-gray-700 flex flex-col">
       <!-- 可拖动分割线 -->
@@ -231,7 +231,7 @@
     </div>
 
     <!-- 常规分析页面 -->
-    <div v-if="activeView === 'analysis'" class="flex flex-col flex-grow overflow-hidden p-6">
+    <div v-else-if="activeView === 'analysis'" class="flex flex-col flex-grow overflow-hidden p-6">
       <div class="max-w-3xl mx-auto w-full">
         <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">常规分析</h2>
         
@@ -372,10 +372,12 @@
       复制成功
     </div>
   </div>
-  </div>
 </template>
 
 <script setup lang="ts">
+// 声明模块类型以解决require导入问题
+declare const require: (id: string) => any;
+
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useModelStore } from '../../stores/model'
 import { createChatCompletion } from '../../services/api'
@@ -386,7 +388,7 @@ import DOMPurify from 'dompurify'
 const emit = defineEmits(['loading-state-change'])
 
 // 新增顶部菜单活跃状态
-const activeView = ref('chat');
+const activeView = ref<'chat' | 'analysis' | 'settings'>('chat');
 const isDarkMode = ref(document.documentElement.classList.contains('dark'));
 
 // 使用界面相关数据
@@ -989,7 +991,7 @@ function exportChat() {
 function renderMarkdown(content: string): string {
   try {
     // 使用marked解析Markdown
-    const html = marked.parse(content, { breaks: true });
+    const html = marked.parse(content, { breaks: true }) as string;
     // 使用DOMPurify净化HTML，防止XSS攻击
     return DOMPurify.sanitize(html);
   } catch (error) {
@@ -1079,7 +1081,7 @@ onMounted(() => {
       id: generateId(),
       role: msg.role,
       content: msg.content,
-      isThinking: msg.thinking
+      isThinking: msg.thinking ? true : undefined
     }));
   }
   
@@ -1087,12 +1089,16 @@ onMounted(() => {
   setTimeout(() => {
     try {
       // 获取日志数量，验证日志服务是否正常工作
-      const { getLogsCount } = require('../../utils/logger');
-      const logsCount = getLogsCount();
-      console.log('[INFO] 日志系统状态:', { 
-        logsCount, 
-        activeModel: store.activeModel?.apiId,
-        validModels: ['deepseek-r1', 'claude', 'deepclaude'].includes(store.activeModel?.apiId || '')
+      import('../../utils/logger').then(module => {
+        const { getLogsCount } = module;
+        const logsCount = getLogsCount();
+        console.log('[INFO] 日志系统状态:', { 
+          logsCount, 
+          activeModel: store.activeModel?.apiId,
+          validModels: ['deepseek-r1', 'claude', 'deepclaude'].includes(store.activeModel?.apiId || '')
+        });
+      }).catch(error => {
+        console.error('[ERROR] 无法导入日志模块:', error);
       });
     } catch (error) {
       console.error('[ERROR] 无法访问日志系统:', error);
