@@ -74,7 +74,7 @@ import MarketOverviewPage from './MarketOverviewPage.vue';
 import CapitalFlowPage from './CapitalFlowPage.vue';
 import SectorAnalysisPage from './SectorAnalysisPage.vue';
 import AiAnalysisPage from './AiAnalysisPage.vue';
-import HomePage from './HomePage.vue';
+import FinanceNewsPage from './FinanceNewsPage.vue';
 
 const activeNav = ref('home');
 const currentTime = ref('');
@@ -91,9 +91,9 @@ const currentComponent = computed(() => {
     case 'ai':
       return AiAnalysisPage;
     case 'home':
-      return HomePage;
+      return FinanceNewsPage;
     default:
-      return HomePage; // 默认显示首页内容
+      return FinanceNewsPage; // 默认显示金融首页快报内容
   }
 });
 
